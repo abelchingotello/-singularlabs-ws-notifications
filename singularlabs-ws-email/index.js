@@ -1,44 +1,42 @@
-const nodemailer = require("nodemailer");
+const { sendEmail } = require("./sendEmail");
 
 exports.handler = async (event) => {
-    
-    const { to, subject, text, user, password, host, port } = event;
-    
-    const config = {
-        host: host,
-        port: port,
-        auth: {
-            user: user,
-            pass: password,
-        },
-    };
+    const headers = event.headers || {};
 
-    const mensaje = {
-        from: user,
-        to,
-        subject,
-        text,
-    };
+    // Extraer host, puerto, usuario y contraseña del header
+    const host = Buffer.from(headers['HostEmail'], 'base64').toString('utf-8');
+    const port = Buffer.from(headers['Port'], 'base64').toString('utf-8');
+    const user = Buffer.from(headers['User'], 'base64').toString('utf-8');
+    const password = Buffer.from(headers['Password'], 'base64').toString('utf-8');
 
-    try {
-        const transport = nodemailer.createTransport(config);
-        const info = await transport.sendMail(mensaje);
-        
+    const { to, subject, text, html, attachments } = JSON.parse(event.body);
+
+    // Llamar a la función sendEmail del módulo emailService
+    const result = await sendEmail(host, port, user, password, to, subject, text, html, attachments);
+
+    if (result.success) {
         return {
             statusCode: 200,
-            message: "Correo enviado correctamente",
-            body:  info ,
+            body: JSON.stringify({
+                message: "Correo enviado correctamente",
+                body: result.info,
+            }),
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+            },
         };
-
-    }
-    catch (error) {
-        console.error("Error al enviar correo: ", error);
-        
+    } else {
         return {
             statusCode: 500,
-            message: "Error al enviar el correo",
-            body:  error ,
+            body: JSON.stringify({
+                message: "Error al enviar el correo",
+                body: result.error,
+            }),
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+            },
         };
     }
 };
-
