@@ -9,6 +9,7 @@ exports.handler = async (event) => {
     const user = Buffer.from(headers['User'], 'base64').toString('utf-8');
     const password = Buffer.from(headers['Password'], 'base64').toString('utf-8');
 
+    
     const { to, subject, text, html, attachments } = JSON.parse(event.body);
 
     // Llamar a la función sendEmail del módulo emailService
